@@ -101,6 +101,15 @@ export class LogicalReplicationService extends EventEmitter2 implements LogicalR
       const [client, connection] = await this.client();
       this._lastLsn = uptoLsn || this._lastLsn;
 
+      try {
+        await client.query(`CREATE_REPLICATION_SLOT ${slotName} LOGICAL pgoutput NOEXPORT_SNAPSHOT`);
+      } catch (e: any) {
+        // if the slot already existed: continue
+        if (e.code !== '42710') {
+          throw new Error(e);
+        }
+      }
+
       // check replicationStart
       connection.once('replicationStart', () => {
         this._stop = false;
